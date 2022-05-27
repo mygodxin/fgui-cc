@@ -1,4 +1,4 @@
-import { Window, GComponent, UIPackage, GRoot } from 'fairygui-cc';
+import { Window, GComponent, UIPackage, GRoot, AsyncOperation } from 'fairygui-cc';
 import * as mvc from 'simple-mvc-cc';
 
 class AniWindow extends Window {
@@ -417,6 +417,7 @@ const EVT_FAIRY_HIDE = 'EVT_FAIRY_HIDE';
 const EVT_STAGE_RESIZE = 'EVT_STAGE_RESIZE';
 const EVT_UI_ONREADY = 'EVT_UI_ONREADY';
 const EVT_UI_ONHIDE = 'EVT_UI_ONHIDE';
+var fairyUrlLocalPrefix = '';
 var fairyUrlRemotePrefix = '';
 function getFairyPath(obj) {
     var path = obj.name;
@@ -751,6 +752,112 @@ class AppWindow extends Window {
     onRemove() { }
 }
 
+var EAlertType;
+(function (EAlertType) {
+    /** 显示两个按钮 */
+    EAlertType[EAlertType["DOUBLE"] = 0] = "DOUBLE";
+    /** 只显示左边的 */
+    EAlertType[EAlertType["LEFT"] = 1] = "LEFT";
+    /** 只显示右边的 */
+    EAlertType[EAlertType["RIGHT"] = 2] = "RIGHT";
+    /** 左右按钮颜色交换[TODO] */
+    EAlertType[EAlertType["SWAP"] = 3] = "SWAP";
+    /** 什么按钮都没有 */
+    EAlertType[EAlertType["NONE"] = 4] = "NONE";
+})(EAlertType || (EAlertType = {}));
+/**
+ *  Alert弹窗，具体界面由fairygui完成，需要遵循以下规则，即可快速完成一个Alert弹窗的制作
+ * 1、必须放置一个命名为frame的组件，且里面有一个top控制器，控制closeButton是否显示，0不显示，1显示
+ * 2、必须有两个按钮和一个文本框，且按钮需命名为leftButton,rightButton,文本框需命名为contentTextFiled
+ * 3、使用方法为继承使用，列子如下
+    export class AlertWindow extends kqframe.AlertWindow {
+        static inst: AlertWindow;
+        static show(content: string, param: kqframe.IAlertParam = {}): AlertWindow {
+            if (AlertWindow.inst == null) {
+                AlertWindow.inst = new AlertWindow('Alert', 'Gobang');
+            }
+            AlertWindow.inst.setAndShow(content,param);
+            return AlertWindow.inst;
+        }
+    }
+    //也可以直接创建一个全局函数，简化API，例子如下：
+    function appAlert(content: string, param: kqframe.IAlertParam = {}) {
+        if (null == kqframe.AlertWindow.inst) {
+            kqframe.AlertWindow.inst = new kqframe.AlertWindow('Alert', 'Gobang');
+        }
+        return kqframe.AlertWindow.inst.setAndShow(content, param);
+    }
+ * 4、如果要默认配置一种类型的文本，可直接在fgui的ide里写死，若需要配置不同的名称，可继承AlertWindow扩展refurbish函数，如下：
+    refurbish(){
+        super.refurbish();
+        this.leftButton.title = this.param.textL || (this.param.type == EAlertType.SWAP ? "取消" : "同意");
+        this.rightButton.title = this.param.textR || (this.param.type == EAlertType.DOUBLE ? "拒绝" : "确定");
+    }
+ * 5、可使用import appAlert = AlertWindow.show 的方式，缩短访问路径
+ */
+class AlertWindow extends AppWindow {
+    bindChild() {
+        this.stateCtrl = this.getController('state');
+        this.topCtrl = this.getController('frame.top');
+        this.leftButton = this.getButton("leftButton");
+        this.rightButton = this.getButton("rightButton");
+        this.contentTextFiled = this.getTextField("contentTextFiled");
+    }
+    setAndShow(content, param) {
+        if (param === void 0) {
+            param = {};
+        }
+        this.contentString = content;
+        this.param = param;
+        this.show();
+        return this;
+    }
+    refreshUi() {
+        if (this.topCtrl)
+            this.topCtrl.selectedIndex = this.param.noClose ? 1 : 0;
+        if (this.param.type !== 1 && this.param.type !== 2 && this.param.type !== 3)
+            this.param.type = 0;
+        this.stateCtrl.selectedIndex = this.param.type;
+        this.contentTextFiled.text = this.contentString;
+        if (this.param.title)
+            this.frame.icon = this.param.title;
+        if (this.param.textL)
+            this.leftButton.title = this.param.textL;
+        if (this.param.textR)
+            this.rightButton.title = this.param.textR;
+    }
+    onClickButton(button) {
+        switch (button) {
+            case this.leftButton:
+                this.param.type == EAlertType.SWAP ? this.onClickRight() : this.onClickLeft();
+                break;
+            case this.rightButton:
+                this.param.type == EAlertType.SWAP ? this.onClickLeft() : this.onClickRight();
+                break;
+        }
+    }
+    onClickLeft() {
+        if (!this.param.stayL)
+            this.hide();
+        if (typeof this.param.subL == "function") {
+            this.param.subL.call(this.param.objL || this.param.thisObj || this);
+        }
+    }
+    onClickRight() {
+        if (!this.param.stayL)
+            this.hide();
+        if (typeof this.param.subR == "function") {
+            this.param.subR.call(this.param.objR || this.param.thisObj || this);
+        }
+    }
+    hide() {
+        super.hide();
+        if (typeof this.param.onClose == "function") {
+            this.param.onClose.call(this.param.objCLose || this.param.thisObj || this);
+        }
+    }
+}
+
 class AppScene extends AppWindow {
     static show(type, param) {
         var scene = getFairyInstence(type);
@@ -791,4 +898,222 @@ class AppScene extends AppWindow {
     }
 }
 
-export { AlertTip, AniWindow, AppComp, AppScene, AppWindow, EVT_FAIRY_CLICK, EVT_FAIRY_HIDE, EVT_FAIRY_SHOW, EVT_STAGE_ADDED, EVT_STAGE_REMOVED, EVT_STAGE_RESIZE, EVT_UI_ONHIDE, EVT_UI_ONREADY, FairyChild, getFairyInstence, getFairyPath };
+const EVT_SourceLoader_CompleteEvent = "EVT_SourceLoader_CompleteEvent";
+const EVT_SourceLoader_FailEvent = "EVT_SL_Fail";
+const EVT_SourceLoader_ErrorEvent = "EVT_SL_Error";
+const EVT_SourceLoader_ProgressEvent = "EVT_SourceLoader_ProgressEvent";
+class ASourceLoader {
+    constructor() {
+        this.progress = function (completedCount, totalCount) {
+            this.completedCount = completedCount;
+            this.totalCount = totalCount;
+            mvc.send(EVT_SourceLoader_ProgressEvent, this);
+        };
+        this.loaded = false;
+        this.callbacks = [];
+        this.thisObjs = [];
+        this.failbacks = [];
+        this.failObjs = [];
+        this.loading = false;
+        this.retry = 0;
+        this.startime = 0;
+        this.loadtime = 0;
+        //by myx
+        this.completedCount = 0;
+        this.totalCount = 0;
+    }
+    /**
+     * 若正在加载过程中，重复调用，将只会注册不同的回调函数，但不会重复换起加载。
+     * 加载成功后，将自动清除所有回调。
+     *  若想维护监听状态，则不要传入回调函数，使用事件机制来处理回调。
+     */
+    load(callback, thisObj, atlases) {
+        if (callback) {
+            var cbidx = this.callbacks.indexOf(callback);
+            var toidx = this.thisObjs.indexOf(thisObj);
+            if (cbidx == -1 && toidx == -1) {
+                this.callbacks.push(callback);
+                this.thisObjs.push(thisObj);
+            }
+        }
+        if (this.loaded) {
+            this.complete();
+            return;
+        }
+        if (this.loading) {
+            return;
+        }
+        this.succeed = false;
+        this.loading = true;
+        this.startime = Date.now();
+        this.loadtime = 0;
+        this.retry += 1;
+        this.start(atlases);
+    }
+    fail(callback, thisObj) {
+        if (callback && thisObj) {
+            var cbidx = this.failbacks.indexOf(callback);
+            var toidx = this.failObjs.indexOf(thisObj);
+            if (cbidx == -1 && toidx == -1) {
+                this.failbacks.push(callback);
+                this.failObjs.push(thisObj);
+            }
+        }
+    }
+    complete() {
+        this.loading = false;
+        this.succeed = true;
+        this.loadtime += Date.now() - this.startime;
+        mvc.send(EVT_SourceLoader_CompleteEvent, this);
+        for (var i = 0; i < this.callbacks.length; ++i) {
+            var cb = this.callbacks[i];
+            var to = this.thisObjs[i];
+            cb && cb.apply(to);
+        }
+        this.callbacks = [];
+        this.thisObjs = [];
+    }
+    success() {
+        this.isPreload = false;
+        this.complete();
+    }
+    onfailed() {
+        this.loading = false;
+        this.failed = true;
+        mvc.send(EVT_SourceLoader_FailEvent, this);
+        for (var i = 0, j = this.failbacks.length; i < j; i++) {
+            var cb = this.failbacks[i];
+            var to = this.failObjs[i];
+            cb && cb.apply(to);
+        }
+        this.failbacks = [];
+        this.failObjs = [];
+    }
+}
+
+class FairyLoader extends ASourceLoader {
+    constructor(packName, bundle, classType, gObjectName, ...args) {
+        super();
+        this.packName = packName;
+        this.bundle = bundle;
+        return this;
+    }
+    start() {
+        if (!this.bundle) {
+            var url = fairyUrlLocalPrefix + this.fileName;
+            UIPackage.loadPackage(url, this.onLoadProcess.bind(this), this.onPackLoaded.bind(this));
+        }
+        else {
+            UIPackage.loadPackage(this.bundle, this.fileName, this.onLoadProcess.bind(this), this.onPackLoaded.bind(this));
+        }
+    }
+    onLoadProcess(count, total) {
+        super.progress(count, total);
+    }
+    onPackLoaded(err, pkg) {
+        if (!err) {
+            this.preCreateAppWindow();
+        }
+    }
+    preCreateAppWindow(position) {
+        var _this = this;
+        if (position === void 0) {
+            position = 0;
+        }
+        if (position == 0) {
+            UIPackage.addPackage(fairyUrlLocalPrefix + this.fileName);
+        }
+        if (this.data && this.data.length > 0 && position < this.data.length) {
+            var win_1 = this.data[position].inst;
+            var create = new AsyncOperation(); //fgui.AsyncOperation();
+            create.callback = function (gObject) {
+                win_1.contentPane = gObject.asCom;
+                _this.preCreateAppWindow(position + 1);
+            };
+            create.createObject(this.fileName, win_1.name);
+        }
+        else {
+            super.success();
+        }
+    }
+}
+
+class SourcePreLoader {
+    constructor() {
+        this.isLoading = false;
+        this.isComplete = false;
+        this.hasError = false;
+        this.numRetrys = 5;
+        mvc.on(EVT_SourceLoader_CompleteEvent, this.onItemLoaded, this);
+        mvc.on(EVT_SourceLoader_ErrorEvent, this.onItemLoaded, this);
+        this.loaderList = [];
+    }
+    addSource(...sourceLoader) {
+        this.loaderList = sourceLoader;
+        this._numSources = this.loaderList.length;
+    }
+    preload(index) {
+        if (index === void 0) {
+            index = 0;
+        }
+        if (this.isComplete) {
+            return;
+        }
+        if (index >= this._numSources) {
+            for (var i = 0; i < this._numSources; ++i) {
+                var item_1 = this.loaderList[i];
+                if (!item_1.loaded) {
+                    if (item_1.retry < this.numRetrys) {
+                        this.preload(i);
+                        return;
+                    }
+                    else {
+                        this.hasError = true;
+                    }
+                }
+            }
+            if (!this.hasError) {
+                this.isComplete = true;
+            }
+            return;
+        }
+        var item = this.loaderList[index];
+        if (item.loading || item.loaded) {
+            this.preload(index + 1);
+            return;
+        }
+        if (item.retry >= 7) {
+            this.hasError = true;
+            this.preload(index + 1);
+            return;
+        }
+        this.isLoading = true;
+        this.loadPosition = index;
+        item.load();
+    }
+    onItemLoaded(sourceLoader) {
+        var index = this.loaderList.indexOf(sourceLoader);
+        if (index != -1 && this.loadPosition == index) {
+            this.preload(index + 1);
+        }
+    }
+    reload() {
+        if (this.isLoading)
+            return;
+        if (this.isComplete && this.hasError) {
+            this.isComplete = false;
+            this.hasError = false;
+            for (var i = 0; i < this.loaderList.length; ++i) {
+                this.loaderList[i].retry = 0;
+            }
+            this.preload();
+        }
+    }
+    forEach(callback) {
+        for (var i = 0; i < this._numSources; ++i) {
+            callback(i, this.loaderList[i]);
+        }
+    }
+}
+
+export { ASourceLoader, AlertTip, AlertWindow, AniWindow, AppComp, AppScene, AppWindow, EAlertType, EVT_FAIRY_CLICK, EVT_FAIRY_HIDE, EVT_FAIRY_SHOW, EVT_STAGE_ADDED, EVT_STAGE_REMOVED, EVT_STAGE_RESIZE, EVT_SourceLoader_CompleteEvent, EVT_SourceLoader_ErrorEvent, EVT_SourceLoader_FailEvent, EVT_SourceLoader_ProgressEvent, EVT_UI_ONHIDE, EVT_UI_ONREADY, FairyChild, FairyLoader, SourcePreLoader, getFairyInstence, getFairyPath };
