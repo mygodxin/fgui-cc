@@ -1,0 +1,36 @@
+import { Controller, GButton, GComboBox, GComponent, GGraph, GGroup, GImage, GLabel, GList, GLoader, GMovieClip, GObject, GProgressBar, GRichTextField, GSlider, GTextField, GTextInput, Transition, Window } from "fairygui-cc";
+export declare class AppComp extends GComponent {
+    contentPane: GComponent;
+    private fairyAdapter;
+    private mediatorAdapter;
+    private uiMediators;
+    constructor(viewComponent: GObject | string, pack?: string);
+    bindChild(): void;
+    onResize(): void;
+    onClickButton(button: GButton): void;
+    onCloseWindow(window: Window): void;
+    setRoot(view: GComponent): void;
+    getComp(path: string): GComponent;
+    getLabel(path: string): GLabel;
+    getProgressBar(path: string): GProgressBar;
+    getTextField(path: string): GTextField;
+    getRichTextField(path: string): GRichTextField;
+    getTextInput(path: string): GTextInput;
+    getLoader(path: string): GLoader;
+    getList(path: string): GList;
+    getGraph(path: string): GGraph;
+    getGroup(path: string): GGroup;
+    getSlider(path: string): GSlider;
+    getComboBox(path: string): GComboBox;
+    getImage(path: string): GImage;
+    getMovieClip(path: string): GMovieClip;
+    getController(path: string): Controller;
+    getTransition(path: string): Transition;
+    getButton(path: string, clickListener?: Function, parent?: GComponent): GButton;
+    getWindow(path: string, closeListener?: Function, parent?: GComponent): Window;
+    get mediatorName(): string;
+    get viewComponent(): AppComp;
+    onRegister(): void;
+    onEvent(eventName: string, params?: any): void;
+    onRemove(): void;
+}

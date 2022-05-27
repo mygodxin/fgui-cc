@@ -1,0 +1,39 @@
+{
+  "name": "simple-fgui-cc",
+  "version": "1.0.2",
+  "description": "a simple fgui project.",
+  "main": "dist/fgui-cc.mjs",
+  "types": "dist/fgui-cc.d.ts",
+  "directories": {
+    "lib": "lib"
+  },
+  "files": [
+    "dist/fgui-cc.mjs",
+    "dist/fgui-cc.min.mjs",
+    "dist/fgui-cc.d.ts"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mygodxin/mvc.git"
+  },
+  "keywords": [],
+  "author": "banshenghuiyi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mygodxin/mvc/issues"
+  },
+  "homepage": "https://github.com/mygodxin/mvc#readme",
+  "devDependencies": {
+    "dts-bundle": "^0.7.3",
+    "gulp": "^4.0.2",
+    "gulp-rename": "^2.0.0",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "gulp-uglify-es": "^3.0.0"
+  },
+  "dependencies": {
+    "rollup": "^2.74.1"
+  }
+}

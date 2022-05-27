@@ -1,0 +1,12 @@
+export declare const EVT_FAIRY_CLICK = "EVT_FAIRY_CLICK";
+export declare const EVT_STAGE_ADDED = "EVT_STAGE_ADDED";
+export declare const EVT_FAIRY_SHOW = "EVT_FAIRY_SHOW";
+export declare const EVT_STAGE_REMOVED = "EVT_STAGE_REMOVED";
+export declare const EVT_FAIRY_HIDE = "EVT_FAIRY_HIDE";
+export declare const EVT_STAGE_RESIZE = "EVT_STAGE_RESIZE";
+export declare const EVT_UI_ONREADY = "EVT_UI_ONREADY";
+export declare const EVT_UI_ONHIDE = "EVT_UI_ONHIDE";
+export declare var fairyUrlLocalPrefix: string;
+export declare var fairyUrlRemotePrefix: string;
+export declare function getFairyPath(obj: any): any;
+export declare function getFairyInstence(type: any, ...args: any[]): any;
